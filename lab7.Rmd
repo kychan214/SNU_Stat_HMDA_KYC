@@ -9,28 +9,92 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+## 데이터 전처리 : 데이터 읽기 / 요약
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
+```{r summary}
 library(dplyr)
+library(caTools)
+library(rpart)
+library(rpart.plot)
+library(ROCR)
+
+# read data
 train <- read.csv('train.csv')
 test <- read.csv('test.csv')
 
+# summary statistics for whole data
 titanic <- bind_rows(train, test)
 summary(titanic)
 
 ```
 
-## Including Plots
+## 데이터 전처리 : 새로운 변수 
 
 You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r New variable}
+# Grab passenger title from passenger name
+titanic$Title <- gsub("^.*, (.*?)\\..*$", "\\1" , titanic$Name)
+
+# Frequency of each title by sex
+table(titanic$Sex, titanic$Title)
+
+# First, I reassign few categories
+titanic$Title[titanic$Title == 'Mlle' | titanic$Title == 'Ms'] <- 'Miss'
+titanic$Title[titanic$Title == 'Mme'] <- 'Mrs'
+
+#then, I create a new category with low frequency of titles
+other <- c('Dona', 'Dr', 'Lady', 'the countess', 'Capt', 'Col', 'Don', 'Jonkheer', 'Major', 'Rev', 'Sir')
+titanic$Title[titanic$Title %in% other] <- 'Other'
+table(titanic$Sex, titanic$Title)
+
+FamilySize <- titanic$SibSp + titanic$Parch + 1
+table(FamilySize)
+
+# create a family size features with three categories
+titanic$FamilySize <- sapply(1:nrow(titanic), function(x)
+  ifelse(FamilySize[x]==1, 'single',
+         ifelse(FamilySize[x]>4, 'large', 'Small')))
+table(titanic$FamilySize)
+
+# Splitting the dataset into the Training set and Test set
+train_original <- titanic[1:891, c('Survived', 'Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked', 'Title', 'FamilySize')]
+test_original <- titanic[892:1309, c('Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked', 'Title', 'FamilySize')]
+
+# Splitting the Training set into the Training set and Validation set
+set.seed(789)
+split = sample.split(train_original$Survived, SplitRatio = 0.8)
+train = subset(train_original, split == TRUE)
+test = subset(train_original, split == FALSE)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## 의사결정나무 적합 / 성능평가
+```{r Decision Tree}
+# Fitting Decision Tree Classification Model to the Training set
+classifier = rpart(Survived ~ ., data = train, method = 'class') 
+
+# Tree Visualization
+rpart.plot(classifier, extra = 4)
+
+# Predicting the Validation set results
+y_pred = predict(classifier, newdata = test[,-which(names(test)=="Survived")], type = 'class')
+
+# Checking the prediction accuracy
+table(test$Survived, y_pred) # Confusion matrix
+error <- mean(test$Survived != y_pred) #Missclassification error
+paste('Accuracy' , round(1-error,4))
+
+# ROC curve
+prob_pred = predict(classifier, newdata = test[,-which(names(test)=='Survived')], type = 'prob')
+fitpred = prediction(prob_pred[,2], test$Survived)
+fitperf = performance(fitpred, 'tpr', 'fpr')
+plot(fitperf, col = 'green', lwd = 2, main = 'ROC curve')
+abline(a = 0, b = 1, lwd = 2, lty = 2, col = 'gray')
+
+# AUC caculation
+dt_auc <- performance(fitpred, measure = 'auc')
+titanic_dt_auc <- dt_auc@y.values[[1]]
+titanic_dt_auc
+
+```
+
