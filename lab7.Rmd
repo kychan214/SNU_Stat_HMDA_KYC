@@ -30,8 +30,6 @@ summary(titanic)
 
 ## 데이터 전처리 : 새로운 변수 
 
-You can also embed plots, for example:
-
 ```{r New variable}
 # Grab passenger title from passenger name
 titanic$Title <- gsub("^.*, (.*?)\\..*$", "\\1" , titanic$Name)
