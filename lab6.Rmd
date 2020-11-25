@@ -1,0 +1,42 @@
+---
+title: "Lab6"
+author: "Kwon Yong Chan"
+date: '2020 11 24 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r linear regression}
+#install.packages('UsingR')
+library(UsingR)
+
+attach(florida)
+summary(florida)
+
+result.lm <- lm(BUCHANAN ~ BUSH)
+plot(BUSH, BUCHANAN)
+abline(result.lm)
+
+summary(result.lm)
+
+with(florida, identify(BUSH, BUCHANAN, n=2, labels = County))
+
+```
+
+## linear model diagnosis
+
+You can also embed plots, for example:
+
+```{r model diagnosis}
+par(mfrow=c(2,2))
+plot(result.lm)
+```
