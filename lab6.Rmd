@@ -9,32 +9,30 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+## 회귀분석
+2000 미 대선 플로리다 선거결과 분석
 
 ```{r linear regression}
-#install.packages('UsingR')
+# call library
 library(UsingR)
 
+# data 'florida' call  
+# The florida data frame has 67 rows and 13 columns. Gives a county by county accounting of the US elections in the state of Florida.
 attach(florida)
-summary(florida)
 
+# linear regression
 result.lm <- lm(BUCHANAN ~ BUSH)
 plot(BUSH, BUCHANAN)
 abline(result.lm)
 
 summary(result.lm)
 
+# detect outlier
 with(florida, identify(BUSH, BUCHANAN, n=2, labels = County))
 
 ```
 
-## linear model diagnosis
-
-You can also embed plots, for example:
+## 회귀모형 진단
 
 ```{r model diagnosis}
 par(mfrow=c(2,2))
